@@ -1,0 +1,17 @@
+spring:
+  main:
+    web-application-type: none
+  config:
+    import: "optional:file:./.env[.properties]"
+
+kestrel:
+  telemetry:
+    port: ${TELEMETRY_PORT:9090}
+    public-key: ${KESTREL_JWT_PUBLIC_KEY:${KESTREL_KEYS_DIR:.kestrel/keys}/public.pem}
+    machine-codes: ${TELEMETRY_MACHINE_CODES:MACHINE-001,MACHINE-002,MACHINE-003}
+    initial-scenario: ${TELEMETRY_INITIAL_SCENARIO:NORMAL}
+    interval: ${TELEMETRY_INTERVAL:1s}
+    temperature: {warning: "${TELEMETRY_TEMPERATURE_WARNING:75}", critical: "${TELEMETRY_TEMPERATURE_CRITICAL:85}"}
+    vibration: {warning: "${TELEMETRY_VIBRATION_WARNING:4}", critical: "${TELEMETRY_VIBRATION_CRITICAL:7}"}
+    pressure: {warning: "${TELEMETRY_PRESSURE_WARNING:6}", critical: "${TELEMETRY_PRESSURE_CRITICAL:7}"}
+    energy: {warning: "${TELEMETRY_ENERGY_WARNING:12}", critical: "${TELEMETRY_ENERGY_CRITICAL:15}"}

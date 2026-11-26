@@ -1,0 +1,26 @@
+name: kestrel
+
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: kestrel
+      POSTGRES_USER: kestrel_admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      MAINTENANCE_DB_PASSWORD: ${MAINTENANCE_DB_PASSWORD:?Set MAINTENANCE_DB_PASSWORD in .env}
+      INVENTORY_DB_PASSWORD: ${INVENTORY_DB_PASSWORD:?Set INVENTORY_DB_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d:ro,Z
+      - ./scripts/check-db-isolation.sh:/kestrel-check-db-isolation.sh:ro,Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  postgres-data:

@@ -1,0 +1,142 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<wsdl:definitions xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/" xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:tns="urn:kestrel:inventory:v1" name="InventoryService" targetNamespace="urn:kestrel:inventory:v1">
+  <wsdl:documentation>Kestrel Inventory v1. Send an HTTP Authorization bearer token on each operation.</wsdl:documentation>
+  <wsdl:types>
+    <xs:schema>
+      <xs:import namespace="urn:kestrel:inventory:v1" schemaLocation="inventory.xsd"/>
+    </xs:schema>
+  </wsdl:types>
+  <wsdl:message name="getSparePartRequest">
+    <wsdl:part name="parameters" element="tns:getSparePartRequest"/>
+  </wsdl:message>
+  <wsdl:message name="getSparePartResponse">
+    <wsdl:part name="parameters" element="tns:getSparePartResponse"/>
+  </wsdl:message>
+  <wsdl:message name="checkStockRequest">
+    <wsdl:part name="parameters" element="tns:checkStockRequest"/>
+  </wsdl:message>
+  <wsdl:message name="checkStockResponse">
+    <wsdl:part name="parameters" element="tns:checkStockResponse"/>
+  </wsdl:message>
+  <wsdl:message name="reservePartRequest">
+    <wsdl:part name="parameters" element="tns:reservePartRequest"/>
+  </wsdl:message>
+  <wsdl:message name="reservePartResponse">
+    <wsdl:part name="parameters" element="tns:reservePartResponse"/>
+  </wsdl:message>
+  <wsdl:message name="releaseReservationRequest">
+    <wsdl:part name="parameters" element="tns:releaseReservationRequest"/>
+  </wsdl:message>
+  <wsdl:message name="releaseReservationResponse">
+    <wsdl:part name="parameters" element="tns:releaseReservationResponse"/>
+  </wsdl:message>
+  <wsdl:message name="createPurchaseOrderRequest">
+    <wsdl:part name="parameters" element="tns:createPurchaseOrderRequest"/>
+  </wsdl:message>
+  <wsdl:message name="createPurchaseOrderResponse">
+    <wsdl:part name="parameters" element="tns:createPurchaseOrderResponse"/>
+  </wsdl:message>
+  <wsdl:message name="InventoryFault">
+    <wsdl:part name="detail" element="tns:inventoryFault"/>
+  </wsdl:message>
+  <wsdl:portType name="InventoryPortType">
+    <wsdl:operation name="getSparePart">
+      <wsdl:documentation>Return part metadata and current available stock.</wsdl:documentation>
+      <wsdl:input message="tns:getSparePartRequest"/>
+      <wsdl:output message="tns:getSparePartResponse"/>
+      <wsdl:fault name="InventoryFault" message="tns:InventoryFault"/>
+    </wsdl:operation>
+    <wsdl:operation name="checkStock">
+      <wsdl:documentation>Report whether available stock covers the requested quantity. This call does not reserve stock.</wsdl:documentation>
+      <wsdl:input message="tns:checkStockRequest"/>
+      <wsdl:output message="tns:checkStockResponse"/>
+      <wsdl:fault name="InventoryFault" message="tns:InventoryFault"/>
+    </wsdl:operation>
+    <wsdl:operation name="reservePart">
+      <wsdl:documentation>Reserve atomically. Use the same requestId after a timeout. Identical replays retain the reservation ID and reflect its current status.</wsdl:documentation>
+      <wsdl:input message="tns:reservePartRequest"/>
+      <wsdl:output message="tns:reservePartResponse"/>
+      <wsdl:fault name="InventoryFault" message="tns:InventoryFault"/>
+    </wsdl:operation>
+    <wsdl:operation name="releaseReservation">
+      <wsdl:documentation>Release stock once. Repeating the release returns RELEASED without adjusting stock again.</wsdl:documentation>
+      <wsdl:input message="tns:releaseReservationRequest"/>
+      <wsdl:output message="tns:releaseReservationResponse"/>
+      <wsdl:fault name="InventoryFault" message="tns:InventoryFault"/>
+    </wsdl:operation>
+    <wsdl:operation name="createPurchaseOrder">
+      <wsdl:documentation>Create a purchase order for a part. The response confirms creation only and stock does not change.</wsdl:documentation>
+      <wsdl:input message="tns:createPurchaseOrderRequest"/>
+      <wsdl:output message="tns:createPurchaseOrderResponse"/>
+      <wsdl:fault name="InventoryFault" message="tns:InventoryFault"/>
+    </wsdl:operation>
+  </wsdl:portType>
+  <wsdl:binding name="InventorySoapBinding" type="tns:InventoryPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <wsdl:operation name="getSparePart">
+      <soap:operation soapAction="urn:kestrel:inventory:v1/getSparePart"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="InventoryFault">
+        <soap:fault name="InventoryFault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="checkStock">
+      <soap:operation soapAction="urn:kestrel:inventory:v1/checkStock"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="InventoryFault">
+        <soap:fault name="InventoryFault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="reservePart">
+      <soap:operation soapAction="urn:kestrel:inventory:v1/reservePart"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="InventoryFault">
+        <soap:fault name="InventoryFault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="releaseReservation">
+      <soap:operation soapAction="urn:kestrel:inventory:v1/releaseReservation"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="InventoryFault">
+        <soap:fault name="InventoryFault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+    <wsdl:operation name="createPurchaseOrder">
+      <soap:operation soapAction="urn:kestrel:inventory:v1/createPurchaseOrder"/>
+      <wsdl:input>
+        <soap:body use="literal"/>
+      </wsdl:input>
+      <wsdl:output>
+        <soap:body use="literal"/>
+      </wsdl:output>
+      <wsdl:fault name="InventoryFault">
+        <soap:fault name="InventoryFault" use="literal"/>
+      </wsdl:fault>
+    </wsdl:operation>
+  </wsdl:binding>
+  <wsdl:service name="InventoryService">
+    <wsdl:port name="InventorySoapPort" binding="tns:InventorySoapBinding">
+      <soap:address location="http://localhost:8082/services/inventory"/>
+    </wsdl:port>
+  </wsdl:service>
+</wsdl:definitions>

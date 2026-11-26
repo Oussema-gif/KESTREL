@@ -1,0 +1,1506 @@
+openapi: 3.0.3
+info:
+  title: Kestrel Maintenance API
+  version: 1.0.0
+  description: Contract for local Kestrel maintenance operations. List results use stable sorting and zero-based
+    pages. Optional response fields are omitted when absent.
+servers:
+  - url: /api/v1
+security:
+  - bearerAuth: []
+paths:
+  /auth/login:
+    post:
+      operationId: login
+      tags:
+        - Authentication
+      summary: Authenticate and issue a token pair
+      description: Return a generic error for invalid credentials. Rate-limit attempts and apply temporary
+        lockout.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authenticated session.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /auth/refresh:
+    post:
+      operationId: refresh
+      tags:
+        - Authentication
+      summary: Rotate the refresh token
+      description: The refresh token authenticates this call. A successful rotation invalidates the submitted
+        token.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '200':
+          description: Replacement token pair.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /auth/logout:
+    post:
+      operationId: logout
+      tags:
+        - Authentication
+      summary: Revoke a refresh token
+      description: Revoke the submitted refresh token. Repeating logout returns 204.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshTokenRequest'
+      responses:
+        '204':
+          description: Logout complete.
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /auth/me:
+    get:
+      operationId: getCurrentUser
+      tags:
+        - Authentication
+      summary: Read the authenticated user
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+        - INVENTORY_OPERATOR
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /machines:
+    get:
+      operationId: listMachines
+      tags:
+        - Machines
+      summary: List registered machines
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+        - INVENTORY_OPERATOR
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: machineCode
+          in: query
+          schema:
+            $ref: '#/components/schemas/MachineCode'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/MachineStatus'
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachinePage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      operationId: createMachine
+      tags:
+        - Machines
+      summary: Register a machine
+      x-roles:
+        - ADMIN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMachineRequest'
+      responses:
+        '201':
+          description: Machine created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Machine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /machines/{machineId}:
+    parameters:
+      - $ref: '#/components/parameters/MachineId'
+    get:
+      operationId: getMachine
+      tags:
+        - Machines
+      summary: Read a machine by UUID
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+        - INVENTORY_OPERATOR
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Machine'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /machines/{machineId}/status:
+    parameters:
+      - $ref: '#/components/parameters/MachineId'
+    get:
+      operationId: getMachineStatus
+      tags:
+        - Machines
+      summary: Read the latest known maintenance status
+      description: Returns 404 if Maintenance has no status observation for this machine.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+        - INVENTORY_OPERATOR
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MachineStatusView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /alerts:
+    get:
+      operationId: listAlerts
+      tags:
+        - Alerts
+      summary: List maintenance alerts
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: machineId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: machineCode
+          in: query
+          schema:
+            $ref: '#/components/schemas/MachineCode'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/AlertStatus'
+        - name: severity
+          in: query
+          schema:
+            $ref: '#/components/schemas/AlertSeverity'
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AlertPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      operationId: createAlert
+      tags:
+        - Alerts
+      summary: Create or deduplicate an alert
+      description: Verify the machine UUID and code refer to the same registered machine. Deduplicate by machineCode
+        and metricType while an ACTIVE or ACKNOWLEDGED alert exists.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAlertRequest'
+      responses:
+        '200':
+          description: Equivalent unresolved alert returned.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '201':
+          description: New alert created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /alerts/{alertId}:
+    parameters:
+      - $ref: '#/components/parameters/AlertId'
+    get:
+      operationId: getAlert
+      tags:
+        - Alerts
+      summary: Read an alert by UUID
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /alerts/{alertId}/acknowledge:
+    parameters:
+      - $ref: '#/components/parameters/AlertId'
+    patch:
+      operationId: acknowledgeAlert
+      tags:
+        - Alerts
+      summary: Acknowledge an alert
+      description: ACTIVE becomes ACKNOWLEDGED. A repeated acknowledgement of an ACKNOWLEDGED alert returns
+        the current representation.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /alerts/{alertId}/resolve:
+    parameters:
+      - $ref: '#/components/parameters/AlertId'
+    patch:
+      operationId: resolveAlert
+      tags:
+        - Alerts
+      summary: Resolve an alert
+      description: ACTIVE or ACKNOWLEDGED becomes RESOLVED. A repeated resolution returns the current representation.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Alert'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /work-orders:
+    get:
+      operationId: listWorkOrders
+      tags:
+        - Work Orders
+      summary: List work orders
+      description: Technicians see only orders assigned to them.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+        - INVENTORY_OPERATOR
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: machineId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Uuid'
+        - name: machineCode
+          in: query
+          schema:
+            $ref: '#/components/schemas/MachineCode'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/WorkOrderStatus'
+        - name: technicianId
+          in: query
+          schema:
+            $ref: '#/components/schemas/Uuid'
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrderPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+    post:
+      operationId: createWorkOrder
+      tags:
+        - Work Orders
+      summary: Create a work order
+      description: Validate the machine UUID/code pair. An alert-linked work order must refer to the same machine
+        as the alert. Return the existing order on an identical replay for that alert or 409 for a conflicting
+        payload.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateWorkOrderRequest'
+      responses:
+        '200':
+          description: The existing matching alert-linked order.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrder'
+        '201':
+          description: Work order created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /work-orders/{workOrderId}:
+    parameters:
+      - $ref: '#/components/parameters/WorkOrderId'
+    get:
+      operationId: getWorkOrder
+      tags:
+        - Work Orders
+      summary: Read a work order by UUID
+      description: A technician may read only an order assigned to them.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+        - INVENTORY_OPERATOR
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /work-orders/{workOrderId}/status:
+    parameters:
+      - $ref: '#/components/parameters/WorkOrderId'
+    patch:
+      operationId: changeWorkOrderStatus
+      tags:
+        - Work Orders
+      summary: Request a work-order state transition
+      description: The REST service enforces the transition rules. Technicians may start or complete only their
+        assigned orders.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeWorkOrderStatusRequest'
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /work-orders/{workOrderId}/assign:
+    parameters:
+      - $ref: '#/components/parameters/WorkOrderId'
+    patch:
+      operationId: assignTechnician
+      tags:
+        - Work Orders
+      summary: Assign an active technician
+      description: Assign an active technician. Terminal orders cannot be reassigned.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignTechnicianRequest'
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /work-orders/{workOrderId}/reservation:
+    parameters:
+      - $ref: '#/components/parameters/WorkOrderId'
+    patch:
+      operationId: recordReservation
+      tags:
+        - Work Orders
+      summary: Record a confirmed SOAP reservation result
+      description: Store a SOAP-confirmed reservation ID or record the release of the current reservation.
+        Replaying the same confirmed result returns the current order. Incompatible state or reservation updates
+        return 409.
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReservationUpdateRequest'
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkOrder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /technicians:
+    get:
+      operationId: listTechnicians
+      tags:
+        - Technicians
+      summary: List technician profiles for assignment
+      x-roles:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+        - name: active
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TechnicianPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+  /audit-events:
+    get:
+      operationId: listAuditEvents
+      tags:
+        - Audit
+      summary: List security and workflow audit events
+      x-roles:
+        - ADMIN
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: Successful result.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuditEventPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        default: 0
+      description: Zero-based page index.
+    Size:
+      name: size
+      in: query
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+    MachineId:
+      name: machineId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    AlertId:
+      name: alertId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+    WorkOrderId:
+      name: workOrderId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+  responses:
+    BadRequest:
+      description: Invalid or malformed request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Unauthorized:
+      description: The operation requires valid credentials or a valid token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      headers:
+        WWW-Authenticate:
+          schema:
+            type: string
+          description: Bearer challenge on protected resource endpoints.
+    Forbidden:
+      description: The caller lacks the required permission.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: The resource or requested observation does not exist.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    Conflict:
+      description: The request conflicts with an existing resource or its state.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    RateLimited:
+      description: Too many attempts. Try again after the indicated delay.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+          description: Seconds to wait before retrying.
+    ServiceUnavailable:
+      description: The service temporarily cannot fulfill the request.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    InternalError:
+      description: An unexpected server error occurred.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+    UtcTimestamp:
+      type: string
+      format: date-time
+      pattern: Z$
+      example: '2026-11-05T10:15:30Z'
+      description: RFC 3339 date-time in UTC with a trailing Z.
+    MachineCode:
+      type: string
+      maxLength: 32
+      pattern: ^[A-Z0-9]+(-[A-Z0-9]+)*$
+      example: MACHINE-001
+    MachineStatus:
+      type: string
+      enum:
+        - RUNNING
+        - WARNING
+        - CRITICAL
+        - OFFLINE
+        - MAINTENANCE
+    MetricType:
+      type: string
+      enum:
+        - TEMPERATURE
+        - VIBRATION
+        - PRESSURE
+        - ENERGY
+    AlertSeverity:
+      type: string
+      enum:
+        - WARNING
+        - CRITICAL
+    AlertStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - ACKNOWLEDGED
+        - RESOLVED
+    WorkOrderPriority:
+      type: string
+      enum:
+        - LOW
+        - MEDIUM
+        - HIGH
+        - URGENT
+    WorkOrderStatus:
+      type: string
+      enum:
+        - OPEN
+        - CHECKING_INVENTORY
+        - READY_FOR_MAINTENANCE
+        - WAITING_FOR_PARTS
+        - PENDING_RESERVATION
+        - IN_PROGRESS
+        - COMPLETED
+        - CANCELLED
+    ReservationStatus:
+      type: string
+      enum:
+        - RESERVED
+        - RELEASED
+    Role:
+      type: string
+      enum:
+        - ADMIN
+        - MAINTENANCE_OPERATOR
+        - TECHNICIAN
+        - INVENTORY_OPERATOR
+    LoginRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          maxLength: 100
+          minLength: 1
+          pattern: \S
+        password:
+          type: string
+          maxLength: 256
+          minLength: 1
+          format: password
+      required:
+        - username
+        - password
+    RefreshTokenRequest:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+          maxLength: 1024
+          minLength: 1
+          format: password
+      required:
+        - refreshToken
+    TokenResponse:
+      type: object
+      properties:
+        accessToken:
+          type: string
+          maxLength: 8192
+        refreshToken:
+          type: string
+          maxLength: 1024
+        tokenType:
+          type: string
+          enum:
+            - Bearer
+        expiresIn:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Access token lifetime in seconds.
+          example: 900
+        refreshExpiresIn:
+          type: integer
+          format: int32
+          minimum: 1
+          description: Refresh token lifetime in seconds.
+          example: 604800
+      required:
+        - accessToken
+        - refreshToken
+        - tokenType
+        - expiresIn
+        - refreshExpiresIn
+    UserProfile:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        username:
+          type: string
+          maxLength: 100
+          minLength: 1
+          pattern: \S
+        fullName:
+          type: string
+          maxLength: 120
+          minLength: 1
+          pattern: \S
+        role:
+          $ref: '#/components/schemas/Role'
+      required:
+        - id
+        - username
+        - fullName
+        - role
+    CreateMachineRequest:
+      type: object
+      properties:
+        machineCode:
+          $ref: '#/components/schemas/MachineCode'
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          pattern: \S
+        location:
+          type: string
+          maxLength: 120
+          minLength: 1
+          pattern: \S
+        model:
+          type: string
+          maxLength: 120
+          minLength: 1
+          pattern: \S
+      required:
+        - machineCode
+        - name
+        - location
+        - model
+    Machine:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        machineCode:
+          $ref: '#/components/schemas/MachineCode'
+        name:
+          type: string
+          maxLength: 120
+          minLength: 1
+          pattern: \S
+        location:
+          type: string
+          maxLength: 120
+          minLength: 1
+          pattern: \S
+        model:
+          type: string
+          maxLength: 120
+          minLength: 1
+          pattern: \S
+        status:
+          $ref: '#/components/schemas/MachineStatus'
+        createdAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+        updatedAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+      required:
+        - id
+        - machineCode
+        - name
+        - location
+        - model
+        - status
+        - createdAt
+        - updatedAt
+    MachineStatusView:
+      type: object
+      properties:
+        machineId:
+          $ref: '#/components/schemas/Uuid'
+        machineCode:
+          $ref: '#/components/schemas/MachineCode'
+        status:
+          $ref: '#/components/schemas/MachineStatus'
+        observedAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+      required:
+        - machineId
+        - machineCode
+        - status
+        - observedAt
+    CreateAlertRequest:
+      type: object
+      properties:
+        machineId:
+          $ref: '#/components/schemas/Uuid'
+        machineCode:
+          $ref: '#/components/schemas/MachineCode'
+        metricType:
+          $ref: '#/components/schemas/MetricType'
+        severity:
+          $ref: '#/components/schemas/AlertSeverity'
+        observedValue:
+          type: number
+          format: double
+        thresholdValue:
+          type: number
+          format: double
+        message:
+          type: string
+          maxLength: 500
+          minLength: 1
+          pattern: \S
+        occurredAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+      required:
+        - machineId
+        - machineCode
+        - metricType
+        - severity
+        - observedValue
+        - thresholdValue
+        - message
+        - occurredAt
+    Alert:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        machineId:
+          $ref: '#/components/schemas/Uuid'
+        machineCode:
+          $ref: '#/components/schemas/MachineCode'
+        metricType:
+          $ref: '#/components/schemas/MetricType'
+        severity:
+          $ref: '#/components/schemas/AlertSeverity'
+        observedValue:
+          type: number
+          format: double
+        thresholdValue:
+          type: number
+          format: double
+        message:
+          type: string
+          maxLength: 500
+          minLength: 1
+          pattern: \S
+        occurredAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+        status:
+          $ref: '#/components/schemas/AlertStatus'
+        acknowledgedAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+        resolvedAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+      required:
+        - id
+        - machineId
+        - machineCode
+        - metricType
+        - severity
+        - observedValue
+        - thresholdValue
+        - message
+        - occurredAt
+        - status
+    PartRequirement:
+      type: object
+      properties:
+        partId:
+          $ref: '#/components/schemas/Uuid'
+        quantity:
+          type: integer
+          format: int32
+          minimum: 1
+      required:
+        - partId
+        - quantity
+    CreateWorkOrderRequest:
+      type: object
+      properties:
+        machineId:
+          $ref: '#/components/schemas/Uuid'
+        machineCode:
+          $ref: '#/components/schemas/MachineCode'
+        alertId:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: \S
+        description:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          pattern: \S
+        priority:
+          $ref: '#/components/schemas/WorkOrderPriority'
+        partRequirement:
+          $ref: '#/components/schemas/PartRequirement'
+      required:
+        - machineId
+        - machineCode
+        - title
+        - description
+        - priority
+      description: Omit alertId for a manual order. Omit partRequirement if no part is required.
+    WorkOrder:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        machineId:
+          $ref: '#/components/schemas/Uuid'
+        machineCode:
+          $ref: '#/components/schemas/MachineCode'
+        alertId:
+          $ref: '#/components/schemas/Uuid'
+        title:
+          type: string
+          maxLength: 160
+          minLength: 1
+          pattern: \S
+        description:
+          type: string
+          maxLength: 2000
+          minLength: 1
+          pattern: \S
+        priority:
+          $ref: '#/components/schemas/WorkOrderPriority'
+        partRequirement:
+          $ref: '#/components/schemas/PartRequirement'
+        status:
+          $ref: '#/components/schemas/WorkOrderStatus'
+        technicianId:
+          $ref: '#/components/schemas/Uuid'
+        reservationId:
+          $ref: '#/components/schemas/Uuid'
+        reservationStatus:
+          $ref: '#/components/schemas/ReservationStatus'
+        createdAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+        updatedAt:
+          $ref: '#/components/schemas/UtcTimestamp'
+      required:
+        - id
+        - machineId
+        - machineCode
+        - title
+        - description
+        - priority
+        - status
+        - createdAt
+        - updatedAt
+    ChangeWorkOrderStatusRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/WorkOrderStatus'
+      required:
+        - status
+    AssignTechnicianRequest:
+      type: object
+      properties:
+        technicianId:
+          $ref: '#/components/schemas/Uuid'
+      required:
+        - technicianId
+    ReservationUpdateRequest:
+      type: object
+      properties:
+        reservationId:
+          $ref: '#/components/schemas/Uuid'
+        status:
+          $ref: '#/components/schemas/ReservationStatus'
+      required:
+        - reservationId
+        - status
+      description: Record the result of a confirmed SOAP reserve or release operation.
+    Technician:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        fullName:
+          type: string
+          maxLength: 120
+          minLength: 1
+          pattern: \S
+        email:
+          type: string
+          maxLength: 254
+          format: email
+        active:
+          type: boolean
+      required:
+        - id
+        - fullName
+        - email
+        - active
+    AuditEvent:
+      type: object
+      properties:
+        id:
+          $ref: '#/components/schemas/Uuid'
+        actorId:
+          $ref: '#/components/schemas/Uuid'
+        action:
+          type: string
+          maxLength: 100
+          minLength: 1
+          pattern: \S
+        target:
+          type: string
+          maxLength: 200
+          minLength: 1
+          pattern: \S
+        result:
+          type: string
+          enum:
+            - SUCCESS
+            - FAILURE
+        timestamp:
+          $ref: '#/components/schemas/UtcTimestamp'
+        source:
+          type: string
+          maxLength: 100
+          minLength: 1
+          pattern: \S
+      required:
+        - id
+        - action
+        - result
+        - timestamp
+        - source
+    FieldViolation:
+      type: object
+      properties:
+        field:
+          type: string
+          maxLength: 200
+          minLength: 1
+          pattern: \S
+        message:
+          type: string
+          maxLength: 500
+          minLength: 1
+          pattern: \S
+      required:
+        - field
+        - message
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+          enum:
+            - VALIDATION_ERROR
+            - INVALID_CREDENTIALS
+            - INVALID_REFRESH_TOKEN
+            - UNAUTHENTICATED
+            - FORBIDDEN
+            - NOT_FOUND
+            - CONFLICT
+            - RATE_LIMITED
+            - SERVICE_UNAVAILABLE
+            - INTERNAL_ERROR
+        message:
+          type: string
+          maxLength: 500
+          minLength: 1
+          pattern: \S
+        traceId:
+          type: string
+          maxLength: 128
+          minLength: 1
+          pattern: \S
+        violations:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldViolation'
+      required:
+        - code
+        - message
+      description: Safe client-facing error. No credentials, tokens or stack traces.
+    MachinePage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Machine'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+    AlertPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Alert'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+    WorkOrderPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/WorkOrder'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+    TechnicianPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/Technician'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+        - content
+        - page
+        - size
+        - totalElements
+    AuditEventPage:
+      type: object
+      properties:
+        content:
+          type: array
+          items:
+            $ref: '#/components/schemas/AuditEvent'
+        page:
+          type: integer
+          format: int32
+          minimum: 0
+        size:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 100
+        totalElements:
+          type: integer
+          format: int64
+          minimum: 0
+      required:
+        - content
+        - page
+        - size
+        - totalElements

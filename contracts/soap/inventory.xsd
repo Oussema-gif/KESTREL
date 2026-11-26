@@ -1,0 +1,155 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:inv="urn:kestrel:inventory:v1" targetNamespace="urn:kestrel:inventory:v1" elementFormDefault="qualified">
+  <xs:simpleType name="Uuid">
+    <xs:restriction base="xs:string">
+      <xs:length value="36"/>
+      <xs:pattern value="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PositiveQuantity">
+    <xs:restriction base="xs:int">
+      <xs:minInclusive value="1"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="StockQuantity">
+    <xs:restriction base="xs:int">
+      <xs:minInclusive value="0"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ShortText">
+    <xs:restriction base="xs:token">
+      <xs:minLength value="1"/>
+      <xs:maxLength value="200"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="LongText">
+    <xs:restriction base="xs:string">
+      <xs:maxLength value="1000"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="ReservationStatus">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="RESERVED"/>
+      <xs:enumeration value="RELEASED"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="PurchaseOrderStatus">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="CREATED"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:simpleType name="InventoryFaultCode">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="UNKNOWN_PART"/>
+      <xs:enumeration value="UNKNOWN_RESERVATION"/>
+      <xs:enumeration value="INSUFFICIENT_STOCK"/>
+      <xs:enumeration value="INVALID_QUANTITY"/>
+      <xs:enumeration value="INVALID_REQUEST"/>
+      <xs:enumeration value="REQUEST_CONFLICT"/>
+      <xs:enumeration value="UNAUTHENTICATED"/>
+      <xs:enumeration value="FORBIDDEN"/>
+      <xs:enumeration value="SERVICE_UNAVAILABLE"/>
+      <xs:enumeration value="INTERNAL_ERROR"/>
+    </xs:restriction>
+  </xs:simpleType>
+  <xs:element name="getSparePartRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="partId" type="inv:Uuid"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="getSparePartResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="partId" type="inv:Uuid"/>
+        <xs:element name="sku" type="inv:ShortText"/>
+        <xs:element name="name" type="inv:ShortText"/>
+        <xs:element name="description" type="inv:LongText" minOccurs="0"/>
+        <xs:element name="unit" type="inv:ShortText"/>
+        <xs:element name="availableQuantity" type="inv:StockQuantity"/>
+        <xs:element name="reorderLevel" type="inv:StockQuantity"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="checkStockRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="partId" type="inv:Uuid"/>
+        <xs:element name="requestedQuantity" type="inv:PositiveQuantity"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="checkStockResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="partId" type="inv:Uuid"/>
+        <xs:element name="requestedQuantity" type="inv:PositiveQuantity"/>
+        <xs:element name="availableQuantity" type="inv:StockQuantity"/>
+        <xs:element name="available" type="xs:boolean"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="reservePartRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="partId" type="inv:Uuid"/>
+        <xs:element name="quantity" type="inv:PositiveQuantity"/>
+        <xs:element name="workOrderId" type="inv:Uuid"/>
+        <xs:element name="requestId" type="inv:Uuid"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="reservePartResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reservationId" type="inv:Uuid"/>
+        <xs:element name="reservedQuantity" type="inv:PositiveQuantity"/>
+        <xs:element name="status" type="inv:ReservationStatus"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="releaseReservationRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reservationId" type="inv:Uuid"/>
+        <xs:element name="reason" type="inv:ShortText"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="releaseReservationResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="reservationId" type="inv:Uuid"/>
+        <xs:element name="status" type="inv:ReservationStatus"/>
+        <xs:element name="releasedAt" type="xs:dateTime"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="createPurchaseOrderRequest">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="partId" type="inv:Uuid"/>
+        <xs:element name="quantity" type="inv:PositiveQuantity"/>
+        <xs:element name="supplierReference" type="inv:ShortText"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="createPurchaseOrderResponse">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="purchaseOrderId" type="inv:Uuid"/>
+        <xs:element name="status" type="inv:PurchaseOrderStatus"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="inventoryFault">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="code" type="inv:InventoryFaultCode"/>
+        <xs:element name="message" type="inv:ShortText"/>
+        <xs:element name="availableQuantity" type="inv:StockQuantity" minOccurs="0"/>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

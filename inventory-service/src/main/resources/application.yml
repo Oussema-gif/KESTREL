@@ -1,0 +1,23 @@
+server:
+  address: 127.0.0.1
+  port: ${INVENTORY_PORT:8082}
+cxf:
+  path: /services
+spring:
+  config:
+    import: "optional:file:./.env[.properties]"
+  datasource:
+    url: ${INVENTORY_DB_URL:jdbc:postgresql://127.0.0.1:${POSTGRES_PORT:5432}/kestrel}
+    username: ${INVENTORY_DB_USER:inventory_app}
+    password: ${INVENTORY_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+  flyway:
+    default-schema: inventory
+    schemas: inventory
+    create-schemas: false
+kestrel:
+  jwt-public-key: ${KESTREL_JWT_PUBLIC_KEY:${KESTREL_KEYS_DIR:.kestrel/keys}/public.pem}
+logging:
+  level:
+    org.apache.cxf.phase.PhaseInterceptorChain: ERROR

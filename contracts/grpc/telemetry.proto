@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package kestrel.telemetry;
+
+option java_multiple_files = true;
+option java_outer_classname = "TelemetryContract";
+option java_package = "com.kestrel.telemetry";
+
+// Both calls require Authorization bearer metadata.
+service TelemetryService {
+  rpc GetMachineSnapshot(MachineRequest) returns (TelemetrySnapshot);
+  rpc StreamMachineTelemetry(MachineRequest) returns (stream TelemetryReading);
+}
+
+message MachineRequest {
+  string machine_code = 1;
+}
+
+message TelemetrySnapshot {
+  string machine_code = 1;
+  double temperature_c = 2;
+  double vibration_mm_s = 3;
+  double pressure_bar = 4;
+  double energy_kw = 5;
+  int64 timestamp_epoch_ms = 6;
+  // RUNNING, WARNING, CRITICAL, OFFLINE, or MAINTENANCE.
+  string machine_status = 7;
+}
+
+message TelemetryReading {
+  string machine_code = 1;
+  double temperature_c = 2;
+  double vibration_mm_s = 3;
+  double pressure_bar = 4;
+  double energy_kw = 5;
+  int64 timestamp_epoch_ms = 6;
+}

@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+package kestrel.telemetry;
+
+option java_multiple_files = true;
+option java_outer_classname = "SimulationControlContract";
+option java_package = "com.kestrel.telemetry";
+
+// Changes a demo machine profile. Requires ADMIN or MAINTENANCE_OPERATOR.
+service SimulationControlService {
+  rpc SetSimulationScenario (SetSimulationScenarioRequest) returns (SetSimulationScenarioResponse);
+}
+
+enum SimulationScenario {
+  SCENARIO_UNSPECIFIED = 0;
+  NORMAL = 1;
+  HIGH_TEMPERATURE = 2;
+  HIGH_VIBRATION = 3;
+  PRESSURE_SPIKE = 4;
+  ENERGY_SPIKE = 5;
+  OFFLINE = 6;
+}
+
+message SetSimulationScenarioRequest {
+  string machine_code = 1;
+  SimulationScenario scenario = 2;
+}
+
+message SetSimulationScenarioResponse {
+  string machine_code = 1;
+  SimulationScenario scenario = 2;
+}
